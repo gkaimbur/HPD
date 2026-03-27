@@ -5,7 +5,21 @@ import joblib
 from sklearn.preprocessing import StandardScaler
 from datetime import datetime
 
+# Firestore integration
+import firebase_admin
+from firebase_admin import credentials, firestore
+from pathlib import Path
+
 st.set_page_config(page_title='HDP Longitudinal Predictor', layout='wide')
+
+# Firebase service setup
+firebase_service_account_path = Path('firebase-service-account.json')
+if firebase_service_account_path.exists():
+    cred = credentials.Certificate(str(firebase_service_account_path))
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+else:
+    db = None
 
 PASSWORD = 'health123'
 
@@ -38,12 +52,66 @@ DEFAULT_PATIENTS = [
     }
 ]
 
+# Firestore persistence helpers
+
+def save_patient_to_firestore(patient):
+    if not db:
+        return
+    doc_ref = db.collection('patients').document(patient['id'])
+    metadata = {k: patient[k] for k in ['name', 'dob'] if k in patient}
+    metadata['updated_at'] = firestore.SERVER_TIMESTAMP
+    doc_ref.set(metadata, merge=True)
+
+    visits = patient.get('visits', [])
+    for visit in visits:
+        visit_ref = doc_ref.collection('visits').document(visit['label'])
+        visit_data = {
+            'date': visit.get('date'),
+            'sbp': int(visit.get('sbp', 0)),
+            'dbp': int(visit.get('dbp', 0)),
+            'risk': float(visit.get('risk', 0.0)),
+            'notes': visit.get('notes', ''),
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        visit_ref.set(visit_data, merge=True)
+
+
+def load_patients_from_firestore():
+    if not db:
+        return DEFAULT_PATIENTS
+    patients = []
+    for pdoc in db.collection('patients').stream():
+        pdata = pdoc.to_dict()
+        pid = pdoc.id
+        if not pdata:
+            continue
+        patient = {
+            'id': pid,
+            'name': pdata.get('name', 'Unknown'),
+            'dob': pdata.get('dob', '1970-01-01'),
+            'visits': []
+        }
+        visit_docs = db.collection('patients').document(pid).collection('visits').stream()
+        for vdoc in visit_docs:
+            vdata = vdoc.to_dict()
+            patient['visits'].append({
+                'label': vdoc.id,
+                'date': vdata.get('date', ''),
+                'sbp': int(vdata.get('sbp', 0)),
+                'dbp': int(vdata.get('dbp', 0)),
+                'risk': float(vdata.get('risk', 0.0)),
+                'notes': vdata.get('notes', '')
+            })
+        patients.append(patient)
+    return patients
+
+
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 if 'patients' not in st.session_state:
-    st.session_state['patients'] = DEFAULT_PATIENTS
+    st.session_state['patients'] = load_patients_from_firestore() if db else DEFAULT_PATIENTS
 if 'selected_patient' not in st.session_state:
-    st.session_state['selected_patient'] = DEFAULT_PATIENTS[0]['id']
+    st.session_state['selected_patient'] = st.session_state['patients'][0]['id'] if st.session_state['patients'] else None
 if 'theme' not in st.session_state:
     st.session_state['theme'] = 'Dark'
 if 'enrollment_mode' not in st.session_state:
@@ -173,7 +241,7 @@ if st.session_state['enrollment_mode']:
                     st.error('Name and DOB required.')
                 else:
                     new_id = f"p{100 + len(st.session_state['patients']) + 1:03d}"
-                    st.session_state['patients'].append({
+                    new_patient = {
                         'id': new_id,
                         'name': enroll_name,
                         'dob': enroll_dob,
@@ -182,10 +250,13 @@ if st.session_state['enrollment_mode']:
                             'date': datetime.now().strftime('%Y-%m-%d'),
                             'sbp': int(visit_sbp),
                             'dbp': int(visit_dbp),
-                            'risk': st.session_state['pred_risk'],
+                            'risk': float(st.session_state['pred_risk']),
                             'notes': visit_notes or 'Initial visit'
                         }]
-                    })
+                    }
+                    st.session_state['patients'].append(new_patient)
+                    if db:
+                        save_patient_to_firestore(new_patient)
                     st.session_state['enrollment_mode'] = False
                     st.success(f'✅ Patient {enroll_name} enrolled successfully!')
                     # Streamlit reruns automatically on user actions, explicit rerun removed
@@ -319,6 +390,17 @@ if st.session_state['enrollment_mode']:
                             (p if p['id'] != selected_patient['id'] else selected_patient)
                             for p in st.session_state['patients']
                         ]
+                        if db:
+                            # Save visit to Firestore separately
+                            visit_doc = selected_patient['visits'][-1]
+                            db.collection('patients').document(selected_patient['id']).collection('visits').document(visit_doc['label']).set({
+                                'date': visit_doc['date'],
+                                'sbp': visit_doc['sbp'],
+                                'dbp': visit_doc['dbp'],
+                                'risk': float(visit_doc['risk']),
+                                'notes': visit_doc['notes'],
+                                'created_at': firestore.SERVER_TIMESTAMP
+                            })
                         st.session_state['selected_patient'] = selected_patient['id']
                         st.success('New visit saved to patient history.')
                         st.success('✅ Visit added. Select another visit to verify data is shown.')
