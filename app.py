@@ -195,7 +195,10 @@ if st.session_state['enrollment_mode']:
                 st.session_state['enrollment_mode'] = False
                 st.info('Enrollment cancelled.')
                 # Streamlit reruns automatically on user actions, explicit rerun removed
-    
+
+    # Define dashboard layout columns before use
+    layout_left, layout_main = st.columns([1, 2])
+
     with layout_left:
         st.subheader('Doctor dashboard')
         st.write('Select patients below:')
