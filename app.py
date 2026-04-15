@@ -559,6 +559,15 @@ else:  # Dashboard page
         .stMetric label {color: #6b7280 !important;}
         .metric-value {color: #0ea5e9 !important;}
         .stSubheader {color: #1f2937 !important;}
+        .stDataFrame, [data-testid="stDataFrame"], div.dataframe {background-color: #f0f4f8 !important; color: #1f2937 !important;}
+        [data-testid="stDataFrame"] tbody {background-color: #ffffff !important; color: #1f2937 !important;}
+        [data-testid="stDataFrame"] thead {background-color: #e5e7eb !important; color: #1f2937 !important;}
+        [data-testid="stDataFrame"] tr {background-color: #ffffff !important; color: #1f2937 !important;}
+        [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th {color: #1f2937 !important; border-color: #d1d5db !important;}
+        table {background-color: #ffffff !important; color: #1f2937 !important;}
+        table tr {background-color: #ffffff !important;}
+        table th {background-color: #e5e7eb !important; color: #1f2937 !important;}
+        table td {color: #1f2937 !important; border-color: #d1d5db !important;}
         </style>
         """, unsafe_allow_html=True)
 
