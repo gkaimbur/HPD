@@ -594,23 +594,33 @@ else:  # Dashboard page
         st.subheader('✏️ Enroll New Patient & Initial Visit')
         st.markdown('Fill in the patient information and initial visit details below.')
         
-        # Initialize empty form fields for enrollment
+        # Initialize EMPTY form fields for enrollment (no defaults)
         if 'enroll_name_val' not in st.session_state:
             st.session_state['enroll_name_val'] = ''
         if 'enroll_dob_val' not in st.session_state:
             st.session_state['enroll_dob_val'] = ''
         if 'enroll_age_val' not in st.session_state:
-            st.session_state['enroll_age_val'] = 18
+            st.session_state['enroll_age_val'] = None  # No default age
         if 'enroll_notes_patient_val' not in st.session_state:
             st.session_state['enroll_notes_patient_val'] = ''
         if 'visit_sbp_val' not in st.session_state:
-            st.session_state['visit_sbp_val'] = 100
+            st.session_state['visit_sbp_val'] = None  # No default
         if 'visit_dbp_val' not in st.session_state:
-            st.session_state['visit_dbp_val'] = 60
+            st.session_state['visit_dbp_val'] = None  # No default
         if 'visit_bmi_val' not in st.session_state:
-            st.session_state['visit_bmi_val'] = 22.0
+            st.session_state['visit_bmi_val'] = None  # No default
         if 'visit_notes_val' not in st.session_state:
             st.session_state['visit_notes_val'] = ''
+        
+        # Function to calculate age from DOB
+        def calculate_age_from_dob(dob_str):
+            try:
+                dob = datetime.strptime(dob_str, '%Y-%m-%d')
+                today = datetime.now()
+                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                return age if 15 <= age <= 50 else None
+            except (ValueError, TypeError):
+                return None
         
         enroll_left, enroll_right = st.columns([1, 2])
         
@@ -620,23 +630,74 @@ else:  # Dashboard page
                                        on_change=lambda: st.session_state.update({'enroll_name_val': st.session_state.get('enroll_name_input', ''), 'unsaved_changes': True}))
             enroll_dob = st.text_input('Date of birth (YYYY-MM-DD)', value=st.session_state['enroll_dob_val'], key='enroll_dob_input', 
                                       on_change=lambda: st.session_state.update({'enroll_dob_val': st.session_state.get('enroll_dob_input', ''), 'unsaved_changes': True}))
-            enroll_age = st.number_input('Age', min_value=15, max_value=50, value=int(st.session_state['enroll_age_val']), key='enroll_age_input',
-                                        on_change=lambda: st.session_state.update({'enroll_age_val': st.session_state.get('enroll_age_input', 18), 'unsaved_changes': True}))
+            
+            # Auto-calculate age when DOB is entered
+            calculated_age = None
+            if enroll_dob:
+                calculated_age = calculate_age_from_dob(enroll_dob)
+            
+            if calculated_age:
+                st.metric('Age (auto-calculated)', f'{calculated_age} years')
+                st.session_state['enroll_age_val'] = calculated_age
+            else:
+                if enroll_dob:
+                    st.warning('❌ Invalid date format or age out of range (15-50)')
+                st.session_state['enroll_age_val'] = None
+            
             enroll_notes_patient = st.text_area('Patient history / notes', value=st.session_state['enroll_notes_patient_val'], key='enroll_notes_patient_input', 
                                                height=120, on_change=lambda: st.session_state.update({'enroll_notes_patient_val': st.session_state.get('enroll_notes_patient_input', ''), 'unsaved_changes': True}))
         
         with enroll_right:
             st.write('### Initial Visit (Visit 1)')
-            visit_sbp = st.number_input('SBP', value=int(st.session_state['visit_sbp_val']), min_value=80, max_value=220, key='visit_sbp_input',
-                                       on_change=lambda: st.session_state.update({'visit_sbp_val': st.session_state.get('visit_sbp_input', 100), 'unsaved_changes': True}))
-            visit_dbp = st.number_input('DBP', value=int(st.session_state['visit_dbp_val']), min_value=50, max_value=150, key='visit_dbp_input',
-                                       on_change=lambda: st.session_state.update({'visit_dbp_val': st.session_state.get('visit_dbp_input', 60), 'unsaved_changes': True}))
-            visit_bmi = st.number_input('BMI', value=float(st.session_state['visit_bmi_val']), min_value=16.0, max_value=45.0, key='visit_bmi_input',
-                                       on_change=lambda: st.session_state.update({'visit_bmi_val': st.session_state.get('visit_bmi_input', 22.0), 'unsaved_changes': True}))
+            visit_sbp = st.number_input('SBP', value=st.session_state['visit_sbp_val'], min_value=80, max_value=220, step=1, key='visit_sbp_input',
+                                       on_change=lambda: st.session_state.update({'visit_sbp_val': st.session_state.get('visit_sbp_input'), 'unsaved_changes': True}))
+            visit_dbp = st.number_input('DBP', value=st.session_state['visit_dbp_val'], min_value=50, max_value=150, step=1, key='visit_dbp_input',
+                                       on_change=lambda: st.session_state.update({'visit_dbp_val': st.session_state.get('visit_dbp_input'), 'unsaved_changes': True}))
+            visit_bmi = st.number_input('BMI', value=st.session_state['visit_bmi_val'], min_value=16.0, max_value=45.0, step=0.1, key='visit_bmi_input',
+                                       on_change=lambda: st.session_state.update({'visit_bmi_val': st.session_state.get('visit_bmi_input'), 'unsaved_changes': True}))
             visit_notes = st.text_area('Clinician notes for this visit', value=st.session_state['visit_notes_val'], key='visit_notes_input', 
                                       height=120, on_change=lambda: st.session_state.update({'visit_notes_val': st.session_state.get('visit_notes_input', ''), 'unsaved_changes': True}))
             
             if st.button('🔍 Predict & Review', use_container_width=True):
+                # VALIDATION BEFORE PREDICTION
+                validation_errors = []
+                
+                # Validate Name (text only, no numbers)
+                if not enroll_name or not enroll_name.strip():
+                    validation_errors.append('❌ Name is required')
+                elif any(char.isdigit() for char in enroll_name):
+                    validation_errors.append('❌ Name must contain only letters and spaces (no numbers)')
+                
+                # Validate DOB (YYYY-MM-DD format)
+                if not enroll_dob or not enroll_dob.strip():
+                    validation_errors.append('❌ Date of birth is required')
+                else:
+                    try:
+                        datetime.strptime(enroll_dob, '%Y-%m-%d')
+                    except ValueError:
+                        validation_errors.append('❌ Date of birth must be in YYYY-MM-DD format (e.g., 1995-03-15)')
+                
+                # Validate Age was auto-calculated
+                if st.session_state['enroll_age_val'] is None:
+                    validation_errors.append('❌ Age could not be calculated - check date of birth format')
+                
+                # Validate SBP (number, within range)
+                if visit_sbp is None or visit_sbp == 0:
+                    validation_errors.append('❌ SBP is required (must be 80-220)')
+                
+                # Validate DBP (number, within range)
+                if visit_dbp is None or visit_dbp == 0:
+                    validation_errors.append('❌ DBP is required (must be 50-150)')
+                
+                # Validate BMI (number, within range)
+                if visit_bmi is None or visit_bmi == 0.0:
+                    validation_errors.append('❌ BMI is required (must be 16.0-45.0)')
+                
+                # Show validation errors if any
+                if validation_errors:
+                    st.error('⚠️ **Please fix the following errors before proceeding:**\n' + '\n'.join(validation_errors))
+                    st.stop()
+                
                 st.session_state['unsaved_changes'] = True
                 
                 with st.spinner('🔄 Calculating risk prediction...'):
@@ -706,7 +767,7 @@ else:  # Dashboard page
                 st.write('**Patient:**')
                 st.write(f"- Name: {enroll_name}")
                 st.write(f"- DOB: {enroll_dob}")
-                st.write(f"- Age: {enroll_age}")
+                st.write(f"- Age: {st.session_state['enroll_age_val']}")
             with confirm_col_visit:
                 st.write('**Visit 1:**')
                 st.write(f"- SBP/DBP: {visit_sbp}/{visit_dbp}")
@@ -750,11 +811,11 @@ else:  # Dashboard page
                             # Clear enrollment form values
                             st.session_state['enroll_name_val'] = ''
                             st.session_state['enroll_dob_val'] = ''
-                            st.session_state['enroll_age_val'] = 18
+                            st.session_state['enroll_age_val'] = None
                             st.session_state['enroll_notes_patient_val'] = ''
-                            st.session_state['visit_sbp_val'] = 100
-                            st.session_state['visit_dbp_val'] = 60
-                            st.session_state['visit_bmi_val'] = 22.0
+                            st.session_state['visit_sbp_val'] = None
+                            st.session_state['visit_dbp_val'] = None
+                            st.session_state['visit_bmi_val'] = None
                             st.session_state['visit_notes_val'] = ''
                         else:
                             st.warning(f'⚠️ Patient {enroll_name} enrolled (local storage only)')
@@ -767,11 +828,11 @@ else:  # Dashboard page
                     # Clear enrollment form values
                     st.session_state['enroll_name_val'] = ''
                     st.session_state['enroll_dob_val'] = ''
-                    st.session_state['enroll_age_val'] = 18
+                    st.session_state['enroll_age_val'] = None
                     st.session_state['enroll_notes_patient_val'] = ''
-                    st.session_state['visit_sbp_val'] = 100
-                    st.session_state['visit_dbp_val'] = 60
-                    st.session_state['visit_bmi_val'] = 22.0
+                    st.session_state['visit_sbp_val'] = None
+                    st.session_state['visit_dbp_val'] = None
+                    st.session_state['visit_bmi_val'] = None
                     st.session_state['visit_notes_val'] = ''
                     st.info('Enrollment cancelled.')
         st.stop()  # Stop here when in enrollment mode - don't show patient view
