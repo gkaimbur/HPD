@@ -14,16 +14,16 @@ db = firestore.client()
 print("Seeding 10 patients...")
 
 patients = [
-    ("patient_001", "Alice Johnson", "1990-03-15", 4, 0.15),
-    ("patient_002", "Sarah Mitchell", "1988-07-22", 5, 0.75),
-    ("patient_003", "Emma Rodriguez", "1992-11-08", 3, 0.05),
-    ("patient_004", "Jennifer Lee", "1989-05-19", 3, 0.50),
-    ("patient_005", "Rebecca Davis", "1991-09-27", 3, 0.18),
-    ("patient_006", "Michelle Garcia", "1987-02-14", 4, 0.95),
-    ("patient_007", "Laura Martinez", "1993-08-03", 4, 0.10),
-    ("patient_008", "Patricia Thompson", "1986-12-10", 5, 0.60),
-    ("patient_009", "Katherine White", "1994-06-21", 3, 0.07),
-    ("patient_010", "Victoria Brown", "1985-04-17", 5, 0.90),
+    ("patient_001", "Amara Okafor", "1990-03-15", 4, 0.15),
+    ("patient_002", "Zainab Abdi", "1988-07-22", 5, 0.75),
+    ("patient_003", "Fatimata Diallo", "1992-11-08", 3, 0.05),
+    ("patient_004", "Nia Mwangi", "1989-05-19", 3, 0.50),
+    ("patient_005", "Adanna Umoh", "1991-09-27", 3, 0.18),
+    ("patient_006", "Kwasiba Mensah", "1987-02-14", 4, 0.95),
+    ("patient_007", "Thandiwe Mthembu", "1993-08-03", 4, 0.10),
+    ("patient_008", "Hadiya Mohamed", "1986-12-10", 5, 0.60),
+    ("patient_009", "Zuri Kangwena", "1994-06-21", 3, 0.07),
+    ("patient_010", "Ama Asante", "1985-04-17", 5, 0.90),
 ]
 
 for pid, name, dob, visits, base_risk in patients:

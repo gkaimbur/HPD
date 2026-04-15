@@ -284,7 +284,7 @@ if 'selected_patient' not in st.session_state:
 if 'theme' not in st.session_state:
     st.session_state['theme'] = 'Dark'
 if 'enrollment_mode' not in st.session_state:
-    st.session_state['enrollment_mode'] = False
+    st.session_state['enrollment_mode'] = False  # Default to View Patients page
 
 # Session timeout & activity tracking
 if 'last_activity' not in st.session_state:
@@ -414,6 +414,7 @@ else:  # Dashboard page
                     st.error('Invalid credentials')
         st.stop()
 
+    st.markdown("<br><br>", unsafe_allow_html=True)  # Move title down
     st.title('Longitudinal Risk Explorer')
 
     # Session timeout check (60 minutes of inactivity)
@@ -495,20 +496,28 @@ else:  # Dashboard page
     top_buttons_col1, top_buttons_col2, top_buttons_spacer = st.columns([1, 1, 3])
 
     with top_buttons_col1:
-        if st.button('🆕 Enroll New Patient', use_container_width=True):
+        # Enroll button styling - active if in enrollment mode
+        btn_style = "🆕 **Enroll New Patient**" if st.session_state['enrollment_mode'] else "🆕 Enroll New Patient"
+        btn_color = "#2ea043" if st.session_state['enrollment_mode'] else "#238636"  # Darker green if active
+        if st.button(btn_style, use_container_width=True, key="enroll_btn"):
             if st.session_state['unsaved_changes'] and st.session_state['enrollment_mode']:
                 st.warning('⚠️ You have unsaved changes. Are you sure you want to exit without saving?')
             else:
                 st.session_state['enrollment_mode'] = not st.session_state['enrollment_mode']
                 st.session_state['unsaved_changes'] = False
+                st.rerun()
 
     with top_buttons_col2:
-        if st.button('👥 View Patients', use_container_width=True):
+        # View Patients button styling - active if not in enrollment mode
+        btn_style = "👥 **View Patients**" if not st.session_state['enrollment_mode'] else "👥 View Patients"
+        btn_color = "#2563eb" if not st.session_state['enrollment_mode'] else "#1d4ed8"  # Darker blue if active
+        if st.button(btn_style, use_container_width=True, key="view_btn"):
             if st.session_state['unsaved_changes'] and st.session_state['enrollment_mode']:
                 st.warning('⚠️ You have unsaved changes in enrollment form. Are you sure you want to exit?')
             else:
                 st.session_state['enrollment_mode'] = False
                 st.session_state['unsaved_changes'] = False
+                st.rerun()
 
     if st.session_state['enrollment_mode']:
         st.markdown('---')
@@ -533,52 +542,53 @@ else:  # Dashboard page
             if st.button('🔍 Predict & Review', use_container_width=True):
                 st.session_state['unsaved_changes'] = True
                 
-                # Create cache key from current inputs to avoid recalculating for same data
-                current_key = (visit_sbp, visit_dbp, visit_bmi)
-                
-                # Check if we already predicted for these exact values
-                if st.session_state['cached_prediction_key'] == current_key and st.session_state['cached_pred_risk'] is not None:
-                    # Reuse cached prediction
-                    pred_risk = st.session_state['cached_pred_risk']
-                    pred_time = st.session_state['cached_pred_time']
-                else:
-                    # Generate new prediction (only once per unique input set)
-                    np.random.seed(42)  # Fixed seed for reproducibility
-                    seq_len = 20
-                    sbp_seq = np.linspace(visit_sbp - 12, visit_sbp, seq_len) + np.random.normal(0, 2, seq_len)
-                    dbp_seq = np.linspace(visit_dbp - 8, visit_dbp, seq_len) + np.random.normal(0, 1.5, seq_len)
-                    map_seq = 0.4 * sbp_seq + 0.6 * dbp_seq
-                    bmi_seq = np.full(seq_len, visit_bmi) + np.linspace(0, 1.2, seq_len)
-                    weight_seq = np.linspace(0, 2.0, seq_len)
-                    oliguria = np.where(np.random.rand(seq_len) < 0.05, 1, 0)
-                    proteinuria = np.where(np.random.rand(seq_len) < 0.03, 1, 0)
+                with st.spinner('🔄 Calculating risk prediction...'):
+                    # Create cache key from current inputs to avoid recalculating for same data
+                    current_key = (visit_sbp, visit_dbp, visit_bmi)
                     
-                    input_data = np.vstack([sbp_seq, dbp_seq, map_seq, bmi_seq, weight_seq, oliguria, proteinuria]).T
-                    input_model = input_data.reshape(1, seq_len, 7)
+                    # Check if we already predicted for these exact values
+                    if st.session_state['cached_prediction_key'] == current_key and st.session_state['cached_pred_risk'] is not None:
+                        # Reuse cached prediction
+                        pred_risk = st.session_state['cached_pred_risk']
+                        pred_time = st.session_state['cached_pred_time']
+                    else:
+                        # Generate new prediction (only once per unique input set)
+                        np.random.seed(42)  # Fixed seed for reproducibility
+                        seq_len = 20
+                        sbp_seq = np.linspace(visit_sbp - 12, visit_sbp, seq_len) + np.random.normal(0, 2, seq_len)
+                        dbp_seq = np.linspace(visit_dbp - 8, visit_dbp, seq_len) + np.random.normal(0, 1.5, seq_len)
+                        map_seq = 0.4 * sbp_seq + 0.6 * dbp_seq
+                        bmi_seq = np.full(seq_len, visit_bmi) + np.linspace(0, 1.2, seq_len)
+                        weight_seq = np.linspace(0, 2.0, seq_len)
+                        oliguria = np.where(np.random.rand(seq_len) < 0.05, 1, 0)
+                        proteinuria = np.where(np.random.rand(seq_len) < 0.03, 1, 0)
+                        
+                        input_data = np.vstack([sbp_seq, dbp_seq, map_seq, bmi_seq, weight_seq, oliguria, proteinuria]).T
+                        input_model = input_data.reshape(1, seq_len, 7)
+                        
+                        clf = joblib.load('artifacts/risk_classifier.pkl')
+                        reg = joblib.load('artifacts/time_regressor.pkl')
+                        mean_ = np.load('artifacts/risk_scaler_mean.npy')
+                        scale_ = np.load('artifacts/risk_scaler_scale.npy')
+                        scaler = StandardScaler()
+                        scaler.mean_ = mean_
+                        scaler.scale_ = scale_
+                        scaler.var_ = scale_**2
+                        scaler.n_features_in_ = 7
+                        
+                        input_scaled = scaler.transform(input_model.reshape(-1, 7)).reshape(1, seq_len, 7)
+                        input_flat = input_scaled.reshape(1, -1)  # Flatten for sklearn
+                        pred_risk = clf.predict_proba(input_flat)[0, 1]  # Probability of positive class
+                        pred_time = reg.predict(input_flat)[0]
+                        
+                        # Cache the prediction results
+                        st.session_state['cached_prediction_key'] = current_key
+                        st.session_state['cached_pred_risk'] = pred_risk
+                        st.session_state['cached_pred_time'] = pred_time
                     
-                    clf = joblib.load('artifacts/risk_classifier.pkl')
-                    reg = joblib.load('artifacts/time_regressor.pkl')
-                    mean_ = np.load('artifacts/risk_scaler_mean.npy')
-                    scale_ = np.load('artifacts/risk_scaler_scale.npy')
-                    scaler = StandardScaler()
-                    scaler.mean_ = mean_
-                    scaler.scale_ = scale_
-                    scaler.var_ = scale_**2
-                    scaler.n_features_in_ = 7
-                    
-                    input_scaled = scaler.transform(input_model.reshape(-1, 7)).reshape(1, seq_len, 7)
-                    input_flat = input_scaled.reshape(1, -1)  # Flatten for sklearn
-                    pred_risk = clf.predict_proba(input_flat)[0, 1]  # Probability of positive class
-                    pred_time = reg.predict(input_flat)[0]
-                    
-                    # Cache the prediction results
-                    st.session_state['cached_prediction_key'] = current_key
-                    st.session_state['cached_pred_risk'] = pred_risk
-                    st.session_state['cached_pred_time'] = pred_time
-                
-                # Store predictions in session for display
-                st.session_state['pred_risk'] = pred_risk
-                st.session_state['pred_time'] = pred_time
+                    # Store predictions in session for display
+                    st.session_state['pred_risk'] = pred_risk
+                    st.session_state['pred_time'] = pred_time
         
         st.markdown('---')
         
@@ -659,8 +669,9 @@ else:  # Dashboard page
         
         search_term = st.text_input('Search patients', '', placeholder='Name or ID', key='patient_search')
 
-        filtered_patients = [p for p in st.session_state['patients'] 
-                             if search_term.lower() in p['name'].lower() or search_term.lower() in p['id'].lower()]
+        with st.spinner('🔄 Loading patients...'):
+            filtered_patients = [p for p in st.session_state['patients'] 
+                                 if search_term.lower() in p['name'].lower() or search_term.lower() in p['id'].lower()]
 
         if filtered_patients:
             patient_ids = [p['id'] for p in filtered_patients]
