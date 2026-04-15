@@ -26,6 +26,7 @@ st.set_page_config(page_title='HDP Longitudinal Predictor', layout='wide')
 firebase_service_account_path = Path('firebase-service-account.json')
 db = None
 firebase_initialized = False
+firebase_error_message = None
 
 # Try to load Firebase credentials from file or environment variable (for Vercel/Render)
 if firebase_admin and firestore:
@@ -41,7 +42,7 @@ if firebase_admin and firestore:
                 firebase_service_account_path.write_text(firebase_json)
                 cred_source = str(firebase_service_account_path)
         except Exception as e:
-            pass
+            firebase_error_message = f"Error loading from Streamlit secrets: {str(e)}"
         
         # Priority 2: Check local file
         if not cred_source and firebase_service_account_path.exists():
@@ -56,7 +57,7 @@ if firebase_admin and firestore:
                     firebase_service_account_path.write_text(firebase_cred_json)
                     cred_source = str(firebase_service_account_path)
                 except Exception as e:
-                    st.warning(f'Failed to decode Firebase credentials from environment: {e}')
+                    firebase_error_message = f"Error decoding Firebase credentials from environment: {str(e)}"
         
         if cred_source:
             try:
@@ -65,15 +66,17 @@ if firebase_admin and firestore:
                 db = firestore.client()
                 firebase_initialized = True
             except Exception as e:
+                firebase_error_message = f"Firebase initialization error: {str(e)}"
                 db = None
         else:
-            pass  # Silent - will show warning on dashboard
+            firebase_error_message = "No Firebase credentials found in Streamlit secrets, local file, or environment variables."
     else:
         # Already initialized
         try:
             db = firestore.client()
             firebase_initialized = True
         except Exception as e:
+            firebase_error_message = f"Error getting Firestore client: {str(e)}"
             db = None
 
 PASSWORD = 'health123'
@@ -384,7 +387,10 @@ if page == "System Architecture":
 else:  # Dashboard page
     
     if not firebase_initialized:
-        st.error('⚠️ Firebase is not initialized. Patient data will not be persisted across sessions. Please ensure firebase-service-account.json is in the project root.')
+        if firebase_error_message:
+            st.error(f'⚠️ Firebase Error: {firebase_error_message}')
+        else:
+            st.error('⚠️ Firebase is not initialized. Patient data will not be persisted across sessions.')
 
     if not st.session_state['logged_in']:
         st.title('Pregnancy Hypertensive Disorder (HDP) Longitudinal Risk Explorer')
