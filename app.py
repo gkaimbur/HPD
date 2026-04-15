@@ -862,7 +862,7 @@ else:  # Dashboard page
                 'Visits': len(p.get('visits', []))
             })
         patients_df = pd.DataFrame(patients_table_data)
-        st.dataframe(patients_df, use_container_width=True, hide_index=True)
+        st.table(patients_df)
     
     st.markdown('---')
     st.write('#### Select Patient to View Details')
@@ -920,7 +920,7 @@ else:  # Dashboard page
                 'Notes': v.get('notes', '')
             })
         visits_table_df = pd.DataFrame(visits_table_data)
-        st.dataframe(visits_table_df, use_container_width=True, hide_index=True)
+        st.table(visits_table_df)
     else:
         st.info('No visits recorded yet.')
     
