@@ -29,65 +29,62 @@ db = None
 firebase_initialized = False
 firebase_error_message = None
 
-# Try to load Firebase credentials from file or environment variable (for Vercel/Render)
+# Try to load Firebase credentials
 try:
     if firebase_admin and firestore:
         # Check if already initialized to prevent multiple initialization
         if not firebase_admin._apps:
-            cred_source = None
+            cred = None
             
             # Priority 1: Check local file FIRST (user's actual file)
             if firebase_service_account_path.exists():
-                cred_source = str(firebase_service_account_path)
+                try:
+                    cred = credentials.Certificate(str(firebase_service_account_path))
+                except Exception as e:
+                    pass
             
-            # Priority 2: Check Streamlit Cloud secrets (TOML format) - DON'T write to file
-            if not cred_source:
+            # Priority 2: Check Streamlit Cloud secrets - use dict directly
+            if not cred:
                 try:
                     if 'firebase' in st.secrets and st.secrets['firebase']:
                         firebase_dict = dict(st.secrets['firebase'])
-                        # Fix: Convert escaped newlines to actual newlines in private_key
-                        if 'private_key' in firebase_dict and isinstance(firebase_dict['private_key'], str):
-                            firebase_dict['private_key'] = firebase_dict['private_key'].replace('\\n', '\n')
-                        firebase_json = json.dumps(firebase_dict)
-                        # Only write if it has valid content (not empty/placeholder)
-                        if firebase_dict.get('project_id') and not firebase_dict.get('project_id').startswith('YOUR_'):
-                            firebase_service_account_path.write_text(firebase_json)
-                            cred_source = str(firebase_service_account_path)
+                        # Ensure private_key has actual newlines
+                        if 'private_key' in firebase_dict:
+                            pk = firebase_dict['private_key']
+                            # Handle both escaped \\n and literal \n
+                            firebase_dict['private_key'] = pk.replace('\\n', '\n') if isinstance(pk, str) else pk
+                        try:
+                            cred = credentials.Certificate(firebase_dict)
+                        except Exception as e:
+                            pass
                 except Exception as e:
-                    firebase_error_message = f"Error loading from Streamlit secrets: {str(e)}"
+                    pass
             
-            # Priority 3: Check base64-encoded environment variable (Render/Railway) - DON'T write unless valid
-            if not cred_source:
-                firebase_cred_base64 = os.getenv('FIREBASE_SERVICE_ACCOUNT_BASE64')
-                if firebase_cred_base64:
-                    try:
-                        firebase_cred_json = base64.b64decode(firebase_cred_base64).decode('utf-8')
-                        # Only write if valid JSON with content
-                        firebase_dict = json.loads(firebase_cred_json)
-                        if firebase_dict.get('project_id') and not firebase_dict.get('project_id').startswith('YOUR_'):
-                            firebase_service_account_path.write_text(firebase_cred_json)
-                            cred_source = str(firebase_service_account_path)
-                    except Exception as e:
-                        firebase_error_message = f"Error decoding Firebase credentials from environment: {str(e)}"
-            
-            if cred_source:
+            # Priority 3: Try environment variable (base64)
+            if not cred:
                 try:
-                    cred = credentials.Certificate(cred_source)
+                    firebase_cred_base64 = os.getenv('FIREBASE_SERVICE_ACCOUNT_BASE64')
+                    if firebase_cred_base64:
+                        firebase_cred_json = base64.b64decode(firebase_cred_base64).decode('utf-8')
+                        firebase_dict = json.loads(firebase_cred_json)
+                        cred = credentials.Certificate(firebase_dict)
+                except Exception as e:
+                    pass
+            
+            # Initialize Firebase if credentials were found
+            if cred:
+                try:
                     firebase_admin.initialize_app(cred)
                     db = firestore.client()
                     firebase_initialized = True
                 except Exception as e:
-                    firebase_error_message = f"Firebase initialization error: {str(e)}"
                     db = None
-            else:
-                firebase_error_message = "No Firebase credentials found in Streamlit secrets, local file, or environment variables."
         else:
             # Already initialized
             try:
                 db = firestore.client()
                 firebase_initialized = True
             except Exception as e:
-                firebase_error_message = f"Error getting Firestore client: {str(e)}"
                 db = None
 except Exception as e:
     # Silently ignore Firebase initialization errors - app works without it
