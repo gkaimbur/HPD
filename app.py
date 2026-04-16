@@ -462,9 +462,9 @@ else:  # Dashboard page
     
     if not firebase_initialized:
         if firebase_error_message:
-            st.error(f'⚠️ Firebase Error: {firebase_error_message}')
+            st.warning(f'ℹ️ Firebase: {firebase_error_message}. App works without it.')
         else:
-            st.error('⚠️ Firebase is not initialized. Patient data will not be persisted across sessions.')
+            st.warning('ℹ️ Firebase is not initialized. Patient data will not be saved across sessions.')
 
     if not st.session_state['logged_in']:
         st.title('HDP PREDICTOR')
