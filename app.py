@@ -760,13 +760,16 @@ else:  # Dashboard page
                         pred_lstm_temporal = None
                         try:
                             if keras:
-                                lstm_model = keras.models.load_model('artifacts/hdp_lstm_model.h5')
+                                # Load without compiling to avoid metric deserialization issues
+                                lstm_model = keras.models.load_model('artifacts/hdp_lstm_model.h5', compile=False)
                                 # LSTM expects shape (1, seq_len, 7)
                                 lstm_pred = lstm_model.predict(input_scaled, verbose=0)
                                 # lstm_pred shape: (1, seq_len, 1) - probability at each week
                                 pred_lstm_temporal = lstm_pred[0].flatten()  # Extract probabilities for each week
                         except Exception as e:
                             # LSTM not available or failed to load
+                            import sys
+                            print(f"LSTM load error: {e}", file=sys.stderr)
                             pred_lstm_temporal = None
                         
                         # Cache the prediction results
