@@ -489,6 +489,15 @@ else:  # Dashboard page
                     st.rerun()  # Auto-redirect to dashboard
                 else:
                     st.error('Invalid credentials')
+        
+        # Display test credentials for testing
+        st.markdown("---")
+        st.info("""
+        **Test Credentials:**
+        - **Username:** `doctor`
+        - **Password:** `health123`
+        """)
+        st.markdown("---")
         st.stop()
 
     st.markdown("<br><br>", unsafe_allow_html=True)  # Move title down
