@@ -1,0 +1,35 @@
+================================================================================
+OPTIMIZED CLASSIFICATION MODEL - RESULTS
+================================================================================
+
+DATA IMPROVEMENTS:
+  Real data: 1,014 patients
+  Synthetic data: 2,500 patients
+  Combined: 3,514 patients
+  With SMOTE balancing: 8843 samples for training
+
+OPTIMIZATION TECHNIQUES:
+  1. Combined real + synthetic data
+  2. SMOTE for class imbalance
+  3. Hyperparameter tuning with GridSearchCV
+  4. Best parameters: {'max_depth': 10, 'min_samples_leaf': 2, 'min_samples_split': 5, 'n_estimators': 150}
+
+RESULTS:
+            Metric Before (1014) After (3514+SMOTE)
+0         Accuracy        80.30%             83.36%
+1         Macro F1        81.30%             0.8377
+2    Cohen's Kappa        0.6999             0.7494
+3              MCC        0.7001             0.7549
+4        Data Size         1,014        3,514+SMOTE
+5  CV Score (mean)        78.54%             82.59%
+
+Per-Class Performance:
+              precision    recall  f1-score   support
+
+   high risk       0.93      0.80      0.86       725
+    low risk       0.91      0.82      0.86       710
+    mid risk       0.72      0.88      0.79       776
+
+    accuracy                           0.83      2211
+   macro avg       0.85      0.83      0.84      2211
+weighted avg       0.85      0.83      0.84      2211

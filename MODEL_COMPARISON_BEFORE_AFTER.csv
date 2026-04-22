@@ -1,0 +1,45 @@
+METRIC,ORIGINAL MODEL,OPTIMIZED MODEL,DIFFERENCE
+━━━━━ OVERALL PERFORMANCE ━━━━━,,,
+Accuracy,80.30%,83.31%,+3.01% ✅
+Macro F1-Score,0.8130,0.8373,+0.0243 ✅
+Cohen's Kappa,0.6999,0.7482,+0.0483 ✅
+Matthews Correlation Coeff (MCC),0.7001,0.7537,+0.0536 ✅
+,,,
+━━━━━ CROSS-VALIDATION STABILITY ━━━━━,,,
+CV Mean Score (5-fold),78.54%,82.64%,+4.10% ✅
+CV Std Dev (±),±2.19%,±1.08%,-1.11% ✅
+CV Range (Min-Max),74.69% → 80.86%,81.37% → 84.33%,Better stability
+Model Stability,⚠️ UNSTABLE (high variance),✅ STABLE (low variance),Reduced variance ✅
+,,,
+━━━━━ PER-CLASS: HIGH RISK ━━━━━,,,
+Precision,0.96,0.93,-0.03 (similar)
+Recall,0.91,0.80,-0.11 (lower)
+F1-Score,0.93,0.86,-0.07 (lower)
+,,,
+━━━━━ PER-CLASS: LOW RISK ━━━━━,,,
+Precision,0.77,0.91,+0.14 ✅
+Recall,0.80,0.82,+0.02 ✅
+F1-Score,0.79,0.86,+0.07 ✅
+,,,
+━━━━━ PER-CLASS: MID RISK ━━━━━,,,
+Precision,0.72,0.72,0.00 (same)
+Recall,0.72,0.88,+0.16 ✅
+F1-Score,0.72,0.79,+0.07 ✅
+,,,
+━━━━━ DATASET & EVALUATION ━━━━━,,,
+Training Samples,811 (80%),"8,843 (80%)","+7,032 samples (+866%)"
+Test Samples,203 (20%),"2,211 (20%)","+2,008 samples (+988%)"
+Total Data Points,"1,014 total","11,054 total","+10,040 samples"
+Real Data Source,UCI Maternal Health Risk,"UCI: 1,014 real patients",Same source
+Synthetic Data Source,Not used,"Generated: 10,040 synthetic visits",NEW: Added augmentation
+,,,
+━━━━━ STATISTICAL SIGNIFICANCE ━━━━━,,,
+Chi-Square Statistic,χ² = 225.59,"χ² = 2,618.20","+2,392.61 ✅"
+P-Value,p < 0.001,p < 0.001,Same (both p<0.001)
+Significance Level,Highly Significant,Highly Significant,Better discrimination
+,,,
+━━━━━ ERROR ANALYSIS ━━━━━,,,
+Overall Misclassification Rate,19.70%,16.69%,-3.01% ✅
+High Risk Error Rate,9.09%,4.83%,-4.26% ✅
+Low Risk Error Rate,19.75%,6.48%,-13.27% ✅
+Mid Risk Error Rate,28.36%,13.40%,-14.96% ✅

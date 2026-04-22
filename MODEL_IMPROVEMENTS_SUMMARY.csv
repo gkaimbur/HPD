@@ -1,0 +1,13 @@
+Category,Original,Optimized,Improvement
+Overall Accuracy,80.30%,83.31%,+3.01 percentage points
+F1-Score (Macro),0.8130,0.8373,+2.43 points
+Model Agreement (Kappa),0.6999,0.7482,+4.83 points
+Correlation (MCC),0.7001,0.7537,+5.36 points
+Cross-Validation Stability,78.54% (±2.19%),82.64% (±1.08%),+4.10 percentage points
+CV Variance Reduction,—,50% reduction,Std dev: ±2.19% → ±1.08%
+Test Set Size,203 samples,"2,211 samples",+988% (10.9x larger)
+Training Data Size,"1,014 samples","11,054 samples",+866% (10.9x larger)
+High Risk Error Reduction,9.09%,4.83%,-4.26 percentage points
+Low Risk Error Reduction,19.75%,6.48%,-13.27 percentage points
+Mid Risk Error Reduction,28.36%,13.40%,-14.96 percentage points
+Overall Error Reduction,19.70%,16.69%,-3.01 percentage points

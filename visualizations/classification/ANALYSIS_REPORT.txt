@@ -5,18 +5,19 @@ MATERNAL HEALTH RISK CLASSIFICATION - COMPREHENSIVE ANALYSIS REPORT
 
 DATASET OVERVIEW
 --------------------------------------------------------------------------------
-Total Samples: 808
+Total Samples: 1014
 Features: Age, SystolicBP, DiastolicBP, BS, BodyTemp, HeartRate
-Target Classes: high risk, low risk
+Target Classes: high risk, low risk, mid risk
 Class Distribution:
 RiskLevel
-low risk     478
-high risk    330
+low risk     406
+mid risk     336
+high risk    272
 
 TRAIN-TEST SPLIT
 --------------------------------------------------------------------------------
-Training Set Size: 646 samples
-Test Set Size: 162 samples
+Training Set Size: 811 samples
+Test Set Size: 203 samples
 Train/Test Ratio: 80/20
 Stratified: Yes (maintains class proportions)
 
@@ -33,88 +34,99 @@ Random State: 42
 STATISTICAL SIGNIFICANCE TESTS
 --------------------------------------------------------------------------------
 Chi-Square Test (Independence):
-  - Test Statistic: 145.9608
+  - Test Statistic: 225.5973
   - P-value: 0.000000
   - Conclusion: SIGNIFICANT (p < 0.05) [OK]
   - Interpretation: Predictions are strongly associated with actual values
 
 Cross-Validation (5-Fold Stratified):
-  - Fold Scores: 0.9692, 0.9612, 0.9690, 0.9302, 0.9380
-  - Mean Accuracy: 0.9535
-  - Std Deviation: 0.0163
-  - Range: [0.9302, 0.9692]
+  - Fold Scores: 0.7914, 0.7778, 0.7469, 0.8025, 0.8086
+  - Mean Accuracy: 0.7854
+  - Std Deviation: 0.0219
+  - Range: [0.7469, 0.8086]
 
 OVERALL PERFORMANCE METRICS
 --------------------------------------------------------------------------------
-Accuracy: 0.9815 (98.15%)
-Macro F1-Score: 0.9807
-Weighted F1-Score: 0.9814
-Cohen's Kappa: 0.9614
-Matthews Correlation Coefficient (MCC): 0.9621
-ROC-AUC Score: 0.9968
+Accuracy: 0.8030 (80.30%)
+Macro F1-Score: 0.8130
+Weighted F1-Score: 0.8040
+Cohen's Kappa: 0.6999
+Matthews Correlation Coefficient (MCC): 0.7001
+
 
 ERROR ANALYSIS
 --------------------------------------------------------------------------------
-Total Misclassifications: 3 out of 162
-Misclassification Rate: 1.85%
-Correct Prediction Confidence: 0.9466
-Incorrect Prediction Confidence: 0.7435
-Confidence Delta: 0.2031
+Total Misclassifications: 40 out of 203
+Misclassification Rate: 19.70%
+Correct Prediction Confidence: 0.7606
+Incorrect Prediction Confidence: 0.6067
+Confidence Delta: 0.1539
 
 Per-Class Error Breakdown:
-  high risk: 3/66 errors (4.55%)
-  low risk: 0/96 errors (0.00%)
+  high risk: 5/55 errors (9.09%)
+  low risk: 16/81 errors (19.75%)
+  mid risk: 19/67 errors (28.36%)
 
 Systematic Misclassification Patterns:
-  high risk    -> low risk    :   3 times (4.5%)
+  high risk    -> low risk    :   2 times (3.6%)
+  high risk    -> mid risk    :   3 times (5.5%)
+  low risk     -> mid risk    :  16 times (19.8%)
+  mid risk     -> high risk   :   2 times (3.0%)
+  mid risk     -> low risk    :  17 times (25.4%)
 
 PER-CLASS PERFORMANCE
 --------------------------------------------------------------------------------
 
 high risk:
-  Precision: 1.0000
-  Recall: 0.9545
-  F1-Score: 0.9767
-  Support: 66
+  Precision: 0.9615
+  Recall: 0.9091
+  F1-Score: 0.9346
+  Support: 55
 
 low risk:
-  Precision: 0.9697
-  Recall: 1.0000
-  F1-Score: 0.9846
-  Support: 96
+  Precision: 0.7738
+  Recall: 0.8025
+  F1-Score: 0.7879
+  Support: 81
+
+mid risk:
+  Precision: 0.7164
+  Recall: 0.7164
+  F1-Score: 0.7164
+  Support: 67
 
 FEATURE IMPORTANCE RANKING
 --------------------------------------------------------------------------------
-BS             : 0.4720
-SystolicBP     : 0.1949
-Age            : 0.1023
-DiastolicBP    : 0.0964
-BodyTemp       : 0.0764
-HeartRate      : 0.0580
+BS             : 0.3523
+SystolicBP     : 0.2280
+Age            : 0.1335
+DiastolicBP    : 0.1229
+HeartRate      : 0.0919
+BodyTemp       : 0.0714
 
 KEY FINDINGS & INTERPRETATIONS
 --------------------------------------------------------------------------------
 1. Model Performance:
-   - The model achieves 98.15% accuracy on the test set
-   - Cross-validation results (0.9535 ± 0.0163) suggest stable performance
-   - Cohen's Kappa (0.9614) indicates excellent agreement beyond chance
+   - The model achieves 80.30% accuracy on the test set
+   - Cross-validation results (0.7854 ± 0.0219) suggest stable performance
+   - Cohen's Kappa (0.6999) indicates good agreement beyond chance
 
 2. Statistical Significance:
    - Chi-square p-value (0.000000) < 0.05: Model predictions are significantly associated with actual labels
    - This confirms that the model is capturing meaningful patterns in the data
 
 3. Error Analysis:
-   - Overall misclassification rate: 1.85%
-   - Model is more confident in correct predictions (confidence delta: 0.2031)
+   - Overall misclassification rate: 19.70%
+   - Model is more confident in correct predictions (confidence delta: 0.1539)
    - Major confusion: See systematic error patterns above
 
 4. Feature Importance:
    - Top 3 features: BS, SystolicBP, Age
-   - Features BS has the highest predictive power (0.4720)
+   - Features BS has the highest predictive power (0.3523)
 
 5. Recommendations:
-   - Model is production-ready
-   - Model misclassification rate is acceptable
+   - Consider further tuning
+   - Focus on reducing
    - class distribution is balanced
 
 VISUALIZATIONS GENERATED
@@ -131,6 +143,6 @@ VISUALIZATIONS GENERATED
 [OK] 10_misclassification_heatmap.png - Normalized error rates
 
 ================================================================================
-Report Generated: 2026-04-14 23:49:21.179644
+Report Generated: 2026-04-22 09:19:07.834214
 Location: visualizations/classification/ANALYSIS_REPORT.txt
 ================================================================================
